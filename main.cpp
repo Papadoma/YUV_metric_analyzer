@@ -1,7 +1,13 @@
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
-#include "metrics.hpp"
+
 #include "yuv.hpp"
+
+#include "MSSSIM.hpp"
+#include "PSNR.hpp"
+#include "PSNRHVS.hpp"
+#include "SSIM.hpp"
+#include "VIFP.hpp"
 
 using namespace std;
 int main(int argc, char* argv[]){
@@ -9,18 +15,10 @@ int main(int argc, char* argv[]){
 	char* file2;
 	char* roi_c;
 	int roi[4] = { 0,0,1,1 };
-	Size frame_size(1,1);
+	cv::Size frame_size(1,1);
 	int no_frames = 1;
 
-	Quality_Metrics metric_calc;
 
-
-	enum metrics{
-		PSNR,
-		MSSIM,
-		MS_SSIM,
-		PSNR_HVS_M,
-	};
 	int metric=0;
 
 	if(argc<3){
@@ -92,14 +90,31 @@ int main(int argc, char* argv[]){
 		loader1.YUV_read(frame_handler1);
 		loader2.YUV_read(frame_handler2);
 
+		cv::Mat roi1, roi2;
+		frame_handler1.y.convertTo(roi1,CV_32F);
+		frame_handler2.y.convertTo(roi2,CV_32F);
+
+		PSNR psnr_metric(roi1.rows,roi1.cols);
+		SSIM ssim_metric(roi1.rows,roi1.cols);
+		PSNRHVS psnrhvs_metric(roi1.rows,roi1.cols);
+		MSSSIM msssim_metric(roi1.rows,roi1.cols);
+		VIFP vifp_metric(roi1.rows,roi1.cols);
+
 		switch(metric){
 		case 0:
-			cout<<metric_calc.getPSNR(frame_handler1.ycrcb,frame_handler2.ycrcb)<<endl;
+			cout<<psnr_metric.compute(roi1, roi2)<<endl;
 			break;
 		case 1:
-			cout<<metric_calc.getMSSIM(frame_handler1.ycrcb,frame_handler2.ycrcb)<<endl;
+			cout<<ssim_metric.compute(roi1, roi2)<<endl;
 			break;
 		case 2:
+			cout<<msssim_metric.compute(roi1, roi2)<<endl;
+			break;
+		case 3:
+			cout<<psnrhvs_metric.compute(roi1, roi2)<<endl;
+			break;
+		case 4:
+			cout<<vifp_metric.compute(roi1, roi2)<<endl;
 			break;
 		}
 	}

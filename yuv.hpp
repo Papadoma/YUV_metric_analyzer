@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <opencv2/opencv.hpp>
 
-using namespace cv;
+
 class YUV_loader{
 
 
@@ -39,12 +39,12 @@ public:
 		size_t width;           /**< The width of the frame, in pixels >*/
 		size_t height;          /**< The height of the frame, in pixels >*/
 
-		Mat y;            /**< Used internally. >*/
-		Mat cb;           /**< Used internally. >*/
-		Mat cr;           /**< Used internally. >*/
-		Mat cb_half;      /**< Used internally. >*/
-		Mat cr_half;      /**< Used internally. >*/
-		Mat ycrcb;        /**< The most-recently image (width x height, 24
+		cv::Mat y;            /**< Used internally. >*/
+		cv::Mat cb;           /**< Used internally. >*/
+		cv::Mat cr;           /**< Used internally. >*/
+		cv::Mat cb_half;      /**< Used internally. >*/
+		cv::Mat cr_half;      /**< Used internally. >*/
+		cv::Mat ycrcb;        /**< The most-recently image (width x height, 24
                                  bit).  Stored in YCrCb order. >*/
 	};
 

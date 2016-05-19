@@ -16,12 +16,12 @@ YUV_loader::YUV_loader(FILE *fin, size_t w, size_t h, struct YUV_Capture &out)
 	out.width = w;
 	out.height = h;
 
-	out.ycrcb = Mat(Size(w,h), CV_8UC3);
-	out.y = Mat(Size(w,h), CV_8UC1);
-	out.cb = Mat(Size(w,h), CV_8UC1);
-	out.cr = Mat(Size(w,h), CV_8UC1);
-	out.cb_half = Mat(Size(w/2,h/2), CV_8UC1);
-	out.cr_half = Mat(Size(w/2,h/2), CV_8UC1);
+	out.ycrcb = cv::Mat(cv::Size(w,h), CV_8UC3);
+	out.y = cv::Mat(cv::Size(w,h), CV_8UC1);
+	out.cb = cv::Mat(cv::Size(w,h), CV_8UC1);
+	out.cr = cv::Mat(cv::Size(w,h), CV_8UC1);
+	out.cb_half = cv::Mat(cv::Size(w/2,h/2), CV_8UC1);
+	out.cr_half = cv::Mat(cv::Size(w/2,h/2), CV_8UC1);
 }
 
 /**
@@ -55,7 +55,7 @@ enum YUV_loader::YUV_ReturnValue YUV_loader::YUV_read(struct YUV_Capture &cap)
 
 	resize(cap.cb_half, cap.cb, cap.cb.size(), CV_INTER_CUBIC);
 	resize(cap.cr_half, cap.cr, cap.cr.size(), CV_INTER_CUBIC);
-	vector<Mat> channels;
+	cv::vector<cv::Mat> channels;
     channels.push_back(cap.y);
     channels.push_back(cap.cr);
     channels.push_back(cap.cb);
