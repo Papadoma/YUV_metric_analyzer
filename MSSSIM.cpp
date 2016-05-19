@@ -54,7 +54,7 @@ float MSSSIM::compute(const cv::Mat& original, const cv::Mat& processed)
 	
 	original.copyTo(im1[0]);
 	processed.copyTo(im2[0]);
-	
+
 	for (int l=0; l<NLEVS; l++) {
 		// [mssim_array(l) ssim_map_array{l} mcs_array(l) cs_map_array{l}] = ssim_index_new(im1, im2, K, window);
 		cv::Scalar res = SSIM::computeSSIM(im1[l], im2[l]);

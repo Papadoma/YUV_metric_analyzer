@@ -14,7 +14,7 @@ int main(int argc, char* argv[]){
 	char* file1;
 	char* file2;
 	char* roi_c;
-	int roi[4] = { 0,0,1,1 };
+	int roi_area[4] = { 0,0,1,1 };
 	cv::Size frame_size(1,1);
 	int no_frames = 1;
 
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]){
 				while ((pos = s.find(",")) != string::npos) {
 					num_s = s.substr(0, pos);
 					s.erase(0, pos + string(",").length());
-					roi[idx++] = atoi(num_s.c_str());
+					roi_area[idx++] = atoi(num_s.c_str());
 				}
 			}else if(string(argv[i])=="-help"){
 				cout<<"-i1 : input file 1"<<endl;
@@ -56,11 +56,8 @@ int main(int argc, char* argv[]){
 				cout<<"-w : width of frame"<<endl;
 				cout<<"-h : height of frame"<<endl;
 				cout<<"-r : region to calculate the metric for, x,y,width,height"<<endl;
-				cout<<"-c : metric chosen, one of the following:"<<endl;
-				cout<<"   0 : PSNR"<<endl;
-				cout<<"   1 : MSSIM (average SSIM of frame)"<<endl;
-				cout<<"   2 : MS-SSIM"<<endl;
-				cout<<"   3 : PSNR-HVS-M"<<endl;
+				cout<<"Metrics: PSNR,SSIM,PSNR-HVSM,VIFP,MS-SSIM"<<endl;
+
 			}
 		}
 	}
@@ -86,39 +83,38 @@ int main(int argc, char* argv[]){
 	YUV_loader loader2(cap_file2, frame_size.width, frame_size.height, frame_handler2);
 
 	int idx_frame=0;
-	while( idx_frame++<no_frames){
+	cv::Mat result(no_frames,5,CV_32FC1);
+
+	do{
 		loader1.YUV_read(frame_handler1);
 		loader2.YUV_read(frame_handler2);
 
 		cv::Mat roi1, roi2;
-		frame_handler1.y.convertTo(roi1,CV_32F);
-		frame_handler2.y.convertTo(roi2,CV_32F);
+		frame_handler1.y(cv::Rect(roi_area[0], roi_area[1], roi_area[2], roi_area[3])).convertTo(roi1,CV_32F);
+		frame_handler2.y(cv::Rect(roi_area[0], roi_area[1], roi_area[2], roi_area[3])).convertTo(roi2,CV_32F);
 
 		PSNR psnr_metric(roi1.rows,roi1.cols);
 		SSIM ssim_metric(roi1.rows,roi1.cols);
-		PSNRHVS psnrhvs_metric(roi1.rows,roi1.cols);
+		PSNRHVS psnrhvsm_metric(roi1.rows,roi1.cols);
 		MSSSIM msssim_metric(roi1.rows,roi1.cols);
 		VIFP vifp_metric(roi1.rows,roi1.cols);
 
-		switch(metric){
-		case 0:
-			cout<<psnr_metric.compute(roi1, roi2)<<endl;
-			break;
-		case 1:
-			cout<<ssim_metric.compute(roi1, roi2)<<endl;
-			break;
-		case 2:
-			cout<<msssim_metric.compute(roi1, roi2)<<endl;
-			break;
-		case 3:
-			cout<<psnrhvs_metric.compute(roi1, roi2)<<endl;
-			break;
-		case 4:
-			cout<<vifp_metric.compute(roi1, roi2)<<endl;
-			break;
-		}
-	}
+		result.at<float>(idx_frame,0) = psnr_metric.compute(roi1, roi2);
+		result.at<float>(idx_frame,1) = ssim_metric.compute(roi1, roi2);
+		result.at<float>(idx_frame,2) = psnrhvsm_metric.compute(roi1, roi2);
+		result.at<float>(idx_frame,3) = vifp_metric.compute(roi1, roi2);
+		result.at<float>(idx_frame,4) = 0;//msssim_metric.compute(roi1, roi2);		//something wrong with this one
 
-	cv::waitKey(0);
+		cout<<"Frame"<<idx_frame<<":"<<
+				result.at<float>(idx_frame,0)<<","<<
+				result.at<float>(idx_frame,1)<<","<<
+				result.at<float>(idx_frame,2)<<","<<
+				result.at<float>(idx_frame,3)<<","<<
+				result.at<float>(idx_frame,4)<<
+				endl;
+
+	}while( ++idx_frame<no_frames);
+
+	//cout<<mean(result)[0]<<endl;
 	return 0;
 }
