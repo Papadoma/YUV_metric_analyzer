@@ -1,6 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
 #include "metrics.hpp"
+#include "yuv.hpp"
 
 using namespace std;
 int main(int argc, char* argv[]){
@@ -12,11 +13,7 @@ int main(int argc, char* argv[]){
 	int no_frames = 1;
 
 	Quality_Metrics metric_calc;
-	VideoCapture cap_file1;
-	VideoCapture cap_file2;
 
-	cap_file1.set(CV_CAP_PROP_FPS ,60);
-	cap_file2.set(CV_CAP_PROP_FPS ,60);
 
 	enum metrics{
 		PSNR,
@@ -24,7 +21,7 @@ int main(int argc, char* argv[]){
 		MS_SSIM,
 		PSNR_HVS_M,
 	};
-	int metric;
+	int metric=0;
 
 	if(argc<3){
 		cout<<"Usage is -i1 <file1> -i2 <file2> -c <psnr,ssim,etc>"<<endl;
@@ -41,12 +38,8 @@ int main(int argc, char* argv[]){
 				metric = atoi(argv[i + 1]);
 			}else if(string(argv[i])=="-w"){
 				frame_size.width = atoi(argv[i + 1]);
-				cap_file1.set(CV_CAP_PROP_FRAME_WIDTH ,frame_size.width);
-				cap_file2.set(CV_CAP_PROP_FRAME_WIDTH ,frame_size.width);
 			}else if(string(argv[i])=="-h"){
 				frame_size.height = atoi(argv[i + 1]);
-				cap_file1.set(CV_CAP_PROP_FRAME_HEIGHT,frame_size.height);
-				cap_file2.set(CV_CAP_PROP_FRAME_HEIGHT,frame_size.height);
 			}else if(string(argv[i])=="-f"){
 				no_frames = atoi(argv[i + 1]);
 			}else if(string(argv[i])=="-r"){
@@ -56,11 +49,9 @@ int main(int argc, char* argv[]){
 				int idx = 0;
 				while ((pos = s.find(",")) != string::npos) {
 					num_s = s.substr(0, pos);
-				    s.erase(0, pos + string(",").length());
-				    roi[idx++] = atoi(num_s.c_str());
+					s.erase(0, pos + string(",").length());
+					roi[idx++] = atoi(num_s.c_str());
 				}
-
-
 			}else if(string(argv[i])=="-help"){
 				cout<<"-i1 : input file 1"<<endl;
 				cout<<"-i2 : input file 2"<<endl;
@@ -76,19 +67,43 @@ int main(int argc, char* argv[]){
 		}
 	}
 
+	FILE *cap_file1 = fopen(file1, "rb");
+	FILE *cap_file2 = fopen(file2, "rb");
 
-
-	cap_file1.open((string(file1)));
-	cap_file2.open((string(file2)));
-
-	int idx_frame=0;
-	while(cap_file1.isOpened() && cap_file2.isOpened() && idx_frame++<no_frames){
-		Mat f1, f2;
-		cap_file1>>f1;
-		cap_file2>>f2;
-		imshow("file 1",f1);
-		cv::waitKey(0);
+	if (!cap_file1)
+	{
+		cout<<"error: unable to open file:"<<file1<<endl;
+		return 1;
+	}
+	if (!cap_file2)
+	{
+		cout<<"error: unable to open file:"<<file2<<endl;
+		return 1;
 	}
 
-	return 1;
+	struct YUV_loader::YUV_Capture frame_handler1;
+	struct YUV_loader::YUV_Capture frame_handler2;
+
+	YUV_loader loader1(cap_file1, frame_size.width, frame_size.height, frame_handler1);
+	YUV_loader loader2(cap_file2, frame_size.width, frame_size.height, frame_handler2);
+
+	int idx_frame=0;
+	while( idx_frame++<no_frames){
+		loader1.YUV_read(frame_handler1);
+		loader2.YUV_read(frame_handler2);
+
+		switch(metric){
+		case 0:
+			cout<<metric_calc.getPSNR(frame_handler1.ycrcb,frame_handler2.ycrcb)<<endl;
+			break;
+		case 1:
+			cout<<metric_calc.getMSSIM(frame_handler1.ycrcb,frame_handler2.ycrcb)<<endl;
+			break;
+		case 2:
+			break;
+		}
+	}
+
+	cv::waitKey(0);
+	return 0;
 }

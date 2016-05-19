@@ -16,7 +16,7 @@ class Quality_Metrics{
 private:
 
 public:
-  Scalar getMSSIM( const Mat& i1, const Mat& i2);
+  double getMSSIM( const Mat& i1, const Mat& i2);
   double getPSNR(const Mat& I1, const Mat& I2);
 };
 

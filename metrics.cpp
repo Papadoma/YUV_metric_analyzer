@@ -8,7 +8,7 @@
 
 #include "metrics.hpp"
 
-Scalar Quality_Metrics::getMSSIM( const Mat& i1, const Mat& i2)
+double Quality_Metrics::getMSSIM( const Mat& i1, const Mat& i2)
 {
  const double C1 = 6.5025, C2 = 58.5225;
  /***************************** INITS **********************************/
@@ -58,7 +58,8 @@ Scalar Quality_Metrics::getMSSIM( const Mat& i1, const Mat& i2)
  divide(t3, t1, ssim_map);      // ssim_map =  t3./t1;
 
  Scalar mssim = mean( ssim_map ); // mssim = average of ssim map
- return mssim;
+
+ return (mssim[0]+mssim[1]+mssim[2])/3;
 }
 
 double Quality_Metrics::getPSNR(const Mat& I1, const Mat& I2)
