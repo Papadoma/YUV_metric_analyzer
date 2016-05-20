@@ -111,6 +111,22 @@ void mouse_select(cv::Mat background, cv::Rect &selection){
 	}
 	addWeighted(background, 1, grid, -0.5, 0.0, background);
 
+	//Overlay numbers
+	cv::Mat text(background.size(), CV_8UC3,cv::Scalar(0,0,0));
+	int CTU_index = 0;
+	for (int row=0;row<background.rows;row+=64){	//horizontals
+		for (int col=0;col<background.cols;col+=64){	//verticals
+			putText(text,patch::to_string(CTU_index++), cv::Point(col+10,row+40), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255,255,255), 1);
+		}
+	}
+	cv::Mat inverted;
+	//bitwise_not ( background, inverted );
+	//bitwise_and(text,inverted,text);
+	//imshow("123",text);
+	//multiply(text,background,background);
+	//bitwise_and(text,background,background);
+	addWeighted(background, 1, text, -0.9, 0.0, background);
+
 	//Resize for fitting purposes
 	if(background.cols>1600){
 		scale = 2;
