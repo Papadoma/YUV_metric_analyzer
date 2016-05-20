@@ -63,7 +63,7 @@ public:
 private:
 	double ssim;
 	double msssim;
-	static const int NLEVS = 5;
+	int NLEVS = 5;
 	static const double WEIGHT[];
 };
 

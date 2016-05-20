@@ -39,6 +39,11 @@ const double MSSSIM::WEIGHT[] = {0.0448, 0.2856, 0.3001, 0.2363, 0.1333};
 
 MSSSIM::MSSSIM(int h, int w) : SSIM(h, w)
 {
+	if(h<16 || w<16)NLEVS = 1;
+	else if(h<64 || w<64)NLEVS = 2;
+	else if(h<128 || w<128)NLEVS = 3;
+	else if(h<256 || w<256)NLEVS = 4;
+	else NLEVS = 5;
 }
 
 float MSSSIM::compute(const cv::Mat& original, const cv::Mat& processed)
@@ -54,7 +59,7 @@ float MSSSIM::compute(const cv::Mat& original, const cv::Mat& processed)
 	
 	original.copyTo(im1[0]);
 	processed.copyTo(im2[0]);
-
+//TODO probably crashes because of NLEVS
 	for (int l=0; l<NLEVS; l++) {
 		// [mssim_array(l) ssim_map_array{l} mcs_array(l) cs_map_array{l}] = ssim_index_new(im1, im2, K, window);
 		cv::Scalar res = SSIM::computeSSIM(im1[l], im2[l]);
