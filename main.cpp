@@ -21,6 +21,7 @@ template < typename T > std::string to_string( const T& n )
 
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
+#include <fstream>
 
 #include "yuv.hpp"
 
@@ -40,6 +41,7 @@ int scale = 1;
 bool mouse_click = false;
 cv::Mat mask;
 cv::Rect safe_area;
+bool multiple_files = false;
 
 
 
@@ -145,7 +147,14 @@ void mouse_select(cv::Mat background, cv::Rect &selection){
 		//cout<<key<<endl;
 	}while(key!=1048586);	//press enter
 	if(mouse_selection.width>=64 && mouse_selection.height>=64)selection = mouse_selection;
-	std::cout<<"Area selected:"<<selection<<endl;
+
+
+	if(multiple_files){	//In case of multiple files, save the region.bin ROI coordinates
+		ofstream myfile;
+		myfile.open ("region.bin");
+		myfile<<patch::to_string(selection.x)+","+patch::to_string(selection.y)+","+patch::to_string(selection.width)+","+patch::to_string(selection.height)<<endl;
+		myfile.close();
+	}
 }
 
 int main(int argc, char* argv[]){
@@ -155,6 +164,7 @@ int main(int argc, char* argv[]){
 	cv::Size frame_size(1,1);
 	int no_frames = 1;
 	bool GUI = false;
+	bool loaded_from_file = false;
 
 	if(argc<3){
 		cout<<"Usage is -i1 <file1> -i2 <file2> -c <psnr,ssim,etc>"<<endl;
@@ -173,6 +183,8 @@ int main(int argc, char* argv[]){
 				frame_size.height = atoi(argv[i + 1]);
 			}else if(string(argv[i])=="-f"){
 				no_frames = atoi(argv[i + 1]);
+			}else if(string(argv[i])=="-multiple"){
+				multiple_files = true;
 			}else if(string(argv[i])=="-r"){
 				roi_c = argv[i + 1];
 				size_t pos = 0;
@@ -194,6 +206,7 @@ int main(int argc, char* argv[]){
 				cout<<"-r : region to calculate the metric for, entered as: x,y,width,height"<<endl;
 				cout<<"-f : number of frames"<<endl;
 				cout<<"-gui : enables gui. In this case, -r is not used."<<endl;
+				cout<<"-multiple : enables testing against multiple .yuv files."<<endl;
 				cout<<"Metrics: PSNR,SSIM,PSNR-HVSM,VIFP,MS-SSIM"<<endl;
 				cout<<"PSNR-HVSM & VIFP need multiple of 8 pixels regions, MS-SSIM multiple of 16."<<endl;
 				cout<<"The levels of MS-SSIM go as 1:16, 2:32, 3:64, 4:128 and 5 for 256 and above."<<endl;
@@ -201,9 +214,9 @@ int main(int argc, char* argv[]){
 		}
 	}
 
+	//Open files
 	FILE *cap_file1 = fopen(file1, "rb");
 	FILE *cap_file2 = fopen(file2, "rb");
-
 	if (!cap_file1)
 	{
 		cout<<"error: unable to open file:"<<file1<<endl;
@@ -214,31 +227,51 @@ int main(int argc, char* argv[]){
 		cout<<"error: unable to open file:"<<file2<<endl;
 		return 1;
 	}
-
 	struct YUV_loader::YUV_Capture frame_handler1;
 	struct YUV_loader::YUV_Capture frame_handler2;
-
 	YUV_loader loader1(cap_file1, frame_size.width, frame_size.height, frame_handler1);
 	YUV_loader loader2(cap_file2, frame_size.width, frame_size.height, frame_handler2);
+
+	if (multiple_files){
+		ifstream myfile;
+		myfile.open ("region.bin");
+		if(myfile.good()){
+			loaded_from_file = true;
+			string s,num_s;
+			int idx = 0;
+			size_t pos = 0;
+			myfile >> s;
+			while ((pos = s.find(",")) != string::npos) {
+				num_s = s.substr(0, pos);
+				s.erase(0, pos + string(",").length());
+				roi_area[idx++] = atoi(num_s.c_str());
+			}
+			roi_area[idx] = atoi(s.c_str());
+		}
+		myfile.close();
+
+	}
 
 	int idx_frame=0;
 	cv::Mat result(no_frames,5,CV_32FC1);
 
 	cv::Rect selection(roi_area[0], roi_area[1], roi_area[2], roi_area[3]);
+	cv::Mat sample;
 	do{
 		loader1.YUV_read(frame_handler1);
 		loader2.YUV_read(frame_handler2);
 
 		cv::Mat roi1, roi2;
-		if(GUI){
+		if(GUI && !loaded_from_file){
 			cv::Mat background;
 			cvtColor(frame_handler1.ycrcb,background,CV_YCrCb2BGR);
 			mouse_select(background,selection);
+			//cout<<patch::to_string(selection.x)+","+patch::to_string(selection.y)+","+patch::to_string(selection.width)+","+patch::to_string(selection.height)<<endl;
 			GUI = false;
 		}
 
 		//Small debugging window
-		cv::Mat sample;
+
 		cvtColor(frame_handler1.ycrcb(selection),sample,CV_YCrCb2BGR);
 		string surtitle;
 		surtitle = patch::to_string(selection.width)+"x"+patch::to_string(selection.height)+" from ("+patch::to_string(selection.x)+","+patch::to_string(selection.y)+")";
@@ -272,7 +305,7 @@ int main(int argc, char* argv[]){
 	cv::Mat row_mean;
 	reduce(result,row_mean, 0, CV_REDUCE_AVG);
 	cout<<"Average:"<<row_mean<<endl;
-	cv::waitKey(0);
+	if ( cv::imread("region.jpg").empty())imwrite( "region.jpg", sample );
 	return 0;
 }
 

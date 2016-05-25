@@ -27,5 +27,8 @@ MSSSIM.o: MSSSIM.cpp
 Metric.o: Metric.cpp
 	g++ -c Metric.cpp
 	 	
+VSNR.o: vsnr.cpp
+	g++ -c vsnr.cpp
+
 clean:
 	rm *o YUV_metrics_analyzer
